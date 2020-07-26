@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	DB_MASTER 		= "immaster"
-	DB_SLAVE 		= "imslave"
+	DB_MASTER 		= "immain"
+	DB_SLAVE 		= "imsubordinate"
 	CACHE 			= "cache"
 )
 
