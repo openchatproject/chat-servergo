@@ -91,11 +91,11 @@ func dialogDOToDialog(dialogDO* dataobject.UserDialogsDO) *mtproto.TLDialog {
 //}
 
 //func (m *dialogModel) GetDialog(userId int32, offsetPeer *base.PeerUtil) (dialog *mtproto.TLDialog) {
-//	slave := dao.GetUserDialogsDAO(dao.DB_SLAVE)
+//	subordinate := dao.GetUserDialogsDAO(dao.DB_SLAVE)
 //
-//	dialogDO := slave.SelectByPeer(userId, int8(offsetPeer.PeerType), offsetPeer.PeerId)
+//	dialogDO := subordinate.SelectByPeer(userId, int8(offsetPeer.PeerType), offsetPeer.PeerId)
 //	// _ = dialog
-//	// dialog := slave.SelectByPeer(userId, int8(offsetPeer.PeerType), offsetPeer.PeerId)
+//	// dialog := subordinate.SelectByPeer(userId, int8(offsetPeer.PeerType), offsetPeer.PeerId)
 //
 //}
 //
@@ -241,12 +241,12 @@ func (m *dialogModel) GetPinnedDialogs(userId int32) (dialogs []*mtproto.TLDialo
 func (m *dialogModel) CreateOrUpdateByLastMessage(userId int32, peerType int32, peerId int32, topMessage int32, unreadMentions bool) (dialogId int32) {
 	// TODO(@benqi): 事务
 	// 创建会话
-	slave := dao.GetUserDialogsDAO(dao.DB_SLAVE)
-	master := dao.GetUserDialogsDAO(dao.DB_MASTER)
+	subordinate := dao.GetUserDialogsDAO(dao.DB_SLAVE)
+	main := dao.GetUserDialogsDAO(dao.DB_MASTER)
 
 	date := int32(time.Now().Unix())
 
-	dialog :=slave.SelectByPeer(userId, int8(peerType), peerId)
+	dialog :=subordinate.SelectByPeer(userId, int8(peerType), peerId)
 	if dialog == nil {
 		dialog = &dataobject.UserDialogsDO{}
 		dialog.UserId = userId
@@ -261,7 +261,7 @@ func (m *dialogModel) CreateOrUpdateByLastMessage(userId int32, peerType int32, 
 		dialog.TopMessage = topMessage
 		dialog.CreatedAt = base2.NowFormatYMDHMS()
 		dialog.Date2 = date
-		dialogId = int32(master.Insert(dialog))
+		dialogId = int32(main.Insert(dialog))
 	} else {
 		if unreadMentions {
 			dialog.UnreadMentionsCount += 1
@@ -270,7 +270,7 @@ func (m *dialogModel) CreateOrUpdateByLastMessage(userId int32, peerType int32, 
 		dialog.TopMessage = topMessage
 		dialog.Date2 = date
 		dialogId = dialog.Id
-		master.UpdateTopMessage(topMessage, dialog.UnreadCount, dialog.UnreadMentionsCount, date, dialog.Id)
+		main.UpdateTopMessage(topMessage, dialog.UnreadCount, dialog.UnreadMentionsCount, date, dialog.Id)
 	}
 	return
 }

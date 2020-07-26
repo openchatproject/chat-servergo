@@ -54,9 +54,9 @@ func GetAccountModel() *accountModel {
 }
 
 func (m *accountModel) RegisterDevice(authKeyId int64, userId int32, tokenType int8, token string) {
-	slave := dao.GetDevicesDAO(dao.DB_SLAVE)
-	master := dao.GetDevicesDAO(dao.DB_MASTER)
-	do := slave.SelectId(authKeyId, tokenType, token)
+	subordinate := dao.GetDevicesDAO(dao.DB_SLAVE)
+	main := dao.GetDevicesDAO(dao.DB_MASTER)
+	do := subordinate.SelectId(authKeyId, tokenType, token)
 	if do == nil {
 		do = &dataobject.DevicesDO{}
 		do.AuthId = authKeyId
@@ -65,15 +65,15 @@ func (m *accountModel) RegisterDevice(authKeyId int64, userId int32, tokenType i
 		do.Token = token
 		do.State = 0
 		do.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
-		master.Insert(do)
+		main.Insert(do)
 	} else {
-		master.UpdateStateById(1, do.Id)
+		main.UpdateStateById(1, do.Id)
 	}
 }
 
 func (m *accountModel) UnRegisterDevice(authKeyId int64, userId int32, tokenType int8, token string) bool {
-	master := dao.GetDevicesDAO(dao.DB_MASTER)
-	rows := master.UpdateState(tokenType, authKeyId, tokenType, token)
+	main := dao.GetDevicesDAO(dao.DB_MASTER)
+	rows := main.UpdateState(tokenType, authKeyId, tokenType, token)
 	return rows == 1
 }
 
@@ -95,8 +95,8 @@ func (m *accountModel) GetNotifySettings(userId int32, peer *base.PeerUtil) *mtp
 }
 
 func (m *accountModel) SetNotifySettings(userId int32, peer *base.PeerUtil, settings *mtproto.TLInputPeerNotifySettings) {
-	slave := dao.GetUserNotifySettingsDAO(dao.DB_SLAVE)
-	master := dao.GetUserNotifySettingsDAO(dao.DB_MASTER)
+	subordinate := dao.GetUserNotifySettingsDAO(dao.DB_SLAVE)
+	main := dao.GetUserNotifySettingsDAO(dao.DB_MASTER)
 
 	var showPreviews int8 = 0
 	var slient int8 = 0
@@ -107,7 +107,7 @@ func (m *accountModel) SetNotifySettings(userId int32, peer *base.PeerUtil, sett
 		slient = 1
 	}
 
-	do := slave.SelectByPeer(userId, int8(peer.PeerType), peer.PeerId)
+	do := subordinate.SelectByPeer(userId, int8(peer.PeerType), peer.PeerId)
 	if do == nil {
 		do = &dataobject.UserNotifySettingsDO{}
 		do.UserId = userId
@@ -118,18 +118,18 @@ func (m *accountModel) SetNotifySettings(userId int32, peer *base.PeerUtil, sett
 		do.MuteUntil = settings.MuteUntil
 		do.Sound = settings.Sound
 
-		master.Insert(do)
+		main.Insert(do)
 	} else {
-		master.UpdateByPeer(showPreviews, slient, settings.MuteUntil, settings.Sound, 0, userId, int8(peer.PeerType), peer.PeerId)
+		main.UpdateByPeer(showPreviews, slient, settings.MuteUntil, settings.Sound, 0, userId, int8(peer.PeerType), peer.PeerId)
 	}
 }
 
 func (m *accountModel) ResetNotifySettings(userId int32) {
-	slave := dao.GetUserNotifySettingsDAO(dao.DB_SLAVE)
-	master := dao.GetUserNotifySettingsDAO(dao.DB_MASTER)
+	subordinate := dao.GetUserNotifySettingsDAO(dao.DB_SLAVE)
+	main := dao.GetUserNotifySettingsDAO(dao.DB_MASTER)
 
-	master.DeleteNotAll(userId)
-	do := slave.SelectByAll(userId)
+	main.DeleteNotAll(userId)
+	do := subordinate.SelectByAll(userId)
 	if do == nil {
 		do = &dataobject.UserNotifySettingsDO{}
 		do.UserId = userId
@@ -138,9 +138,9 @@ func (m *accountModel) ResetNotifySettings(userId int32) {
 		do.ShowPreviews = 1
 		do.Silent = 0
 		do.MuteUntil = 0
-		master.Insert(do)
+		main.Insert(do)
 	} else {
-		master.UpdateByPeer(1, 0, 0, "default", 0, userId, base.PEER_ALL, 0)
+		main.UpdateByPeer(1, 0, 0, "default", 0, userId, base.PEER_ALL, 0)
 	}
 }
 */
